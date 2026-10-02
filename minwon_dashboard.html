@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>민원처리 현황 시각화 개선 기획 대시보드</title>
+<style>
+  :root{
+    --bg:#f4f7fb;
+    --panel:#ffffff;
+    --text:#18212f;
+    --muted:#667085;
+    --line:#e4e7ec;
+    --navy:#173b63;
+    --blue:#2f6fed;
+    --blue-soft:#eef4ff;
+    --amber:#b76500;
+    --amber-soft:#fff5e5;
+    --red:#b42318;
+    --red-soft:#fef3f2;
+    --green:#137a5a;
+    --green-soft:#ecfdf3;
+    --shadow:0 8px 24px rgba(16,24,40,.07);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  .page{
+    width:min(1500px, calc(100% - 32px));
+    margin:18px auto;
+  }
+  header{
+    background:linear-gradient(135deg,#143557,#214f7c);
+    color:#fff;
+    border-radius:20px;
+    padding:26px 30px 22px;
+    box-shadow:var(--shadow);
+  }
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.12em;
+    opacity:.8;
+    font-weight:700;
+  }
+  h1{
+    margin:8px 0 7px;
+    font-size:30px;
+    line-height:1.25;
+    letter-spacing:-.03em;
+  }
+  .subtitle{
+    margin:0;
+    color:rgba(255,255,255,.82);
+    font-size:14px;
+  }
+  .badges{
+    display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;
+  }
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:7px 10px; border-radius:999px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18);
+    font-size:12px; font-weight:700;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#8dc2ff}
+
+  .grid{
+    display:grid;
+    grid-template-columns:1.15fr 1fr 1fr;
+    gap:14px;
+    margin-top:14px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:var(--shadow);
+    min-width:0;
+  }
+  .span2{grid-column:span 2}
+  .span3{grid-column:span 3}
+  .card h2{
+    margin:0 0 13px;
+    font-size:16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    letter-spacing:-.02em;
+  }
+  .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:25px;height:25px;border-radius:8px;
+    color:#fff;background:var(--navy);
+    font-size:12px;font-weight:800;
+  }
+  .tag{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:800;
+    margin-left:6px;
+  }
+  .tag.fact{background:var(--blue-soft);color:#2458bd}
+  .tag.proposal{background:var(--green-soft);color:var(--green)}
+  .tag.check{background:var(--amber-soft);color:var(--amber)}
+  ul{margin:0;padding-left:19px}
+  li{
+    margin:7px 0;
+    line-height:1.48;
+    font-size:13px;
+  }
+  .factbox,.proposalbox{
+    border-radius:12px;
+    padding:12px 13px;
+    margin-top:10px;
+    font-size:13px;
+    line-height:1.55;
+  }
+  .factbox{background:#f8fbff;border:1px solid #dbe8ff}
+  .proposalbox{background:#f4fbf8;border:1px solid #d8f0e6}
+  .label{
+    font-size:11px;font-weight:800;
+    margin-bottom:5px;
+    letter-spacing:.03em;
+  }
+  .factbox .label{color:#2458bd}
+  .proposalbox .label{color:var(--green)}
+  .problem-list{
+    display:grid;gap:9px;
+  }
+  .problem{
+    display:grid;grid-template-columns:92px 1fr;
+    border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;
+    font-size:12px;
+  }
+  .problem b{
+    background:#f8fafc;padding:11px;
+    display:flex;align-items:center;
+  }
+  .problem span{padding:11px;line-height:1.45}
+  .tasks{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+  .task{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:13px 12px;
+    background:#fff;
+  }
+  .task .icon{
+    width:30px;height:30px;border-radius:9px;
+    background:var(--blue-soft);color:var(--blue);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;margin-bottom:8px;
+  }
+  .task h3{margin:0 0 5px;font-size:13px}
+  .task p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+  .flow{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+    align-items:stretch;
+  }
+  .step{
+    position:relative;
+    border:1px solid var(--line);
+    background:#fbfcfe;
+    border-radius:12px;
+    padding:12px;
+    min-height:105px;
+  }
+  .step:not(:last-child)::after{
+    content:"→";
+    position:absolute;
+    right:-10px;
+    top:40px;
+    color:#98a2b3;
+    background:var(--bg);
+    width:18px;height:24px;
+    text-align:center;
+    font-weight:800;
+  }
+  .step small{color:var(--blue);font-weight:900}
+  .step h3{margin:4px 0 5px;font-size:13px}
+  .step p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+  .effects{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:8px;
+  }
+  .effect{
+    padding:12px;
+    border:1px solid #dcebe5;
+    background:#f7fcfa;
+    border-radius:10px;
+    font-size:12px;
+    line-height:1.45;
+    color:#285b4a;
+    font-weight:700;
+  }
+  .risk-table{
+    width:100%;border-collapse:separate;border-spacing:0;
+    font-size:12px;overflow:hidden;border:1px solid var(--line);border-radius:10px;
+  }
+  .risk-table th,.risk-table td{
+    padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;
+  }
+  .risk-table th{background:#f8fafc;color:#475467}
+  .risk-table tr:last-child td{border-bottom:0}
+  .needs{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+  }
+  .need{
+    padding:10px 11px;
+    border-radius:10px;
+    border:1px dashed #e6a74c;
+    background:var(--amber-soft);
+    color:#7a4300;
+    font-size:12px;
+    font-weight:800;
+  }
+  .decision{
+    border:1px solid #f1b6b2;
+    background:linear-gradient(180deg,#fffafa,#fff);
+  }
+  .decision h2{color:#8d1d16}
+  .decision-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:9px;
+  }
+  .decision-item{
+    border-left:4px solid #d92d20;
+    background:#fff5f4;
+    border-radius:8px;
+    padding:10px 11px;
+  }
+  .decision-item b{font-size:12px;display:block;margin-bottom:3px}
+  .decision-item span{font-size:11px;line-height:1.45;color:#69413c}
+  footer{
+    display:flex;justify-content:space-between;gap:12px;
+    margin-top:12px;padding:0 4px 6px;
+    color:#667085;font-size:11px;
+  }
+  @media(max-width:1100px){
+    .grid{grid-template-columns:1fr 1fr}
+    .span3{grid-column:span 2}
+    .tasks{grid-template-columns:repeat(2,1fr)}
+    .flow{grid-template-columns:1fr}
+    .step:not(:last-child)::after{display:none}
+    .effects{grid-template-columns:repeat(2,1fr)}
+    .decision-grid,.needs{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:700px){
+    .page{width:min(100% - 18px,1500px);margin:9px auto}
+    header{padding:20px;border-radius:14px}
+    h1{font-size:23px}
+    .grid{grid-template-columns:1fr}
+    .span2,.span3{grid-column:auto}
+    .tasks,.effects,.decision-grid,.needs{grid-template-columns:1fr}
+  }
+  @media print{
+    body{background:#fff}
+    .page{width:100%;margin:0}
+    header,.card{box-shadow:none}
+    .grid{gap:8px}
+    .card{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="eyebrow">INTERNAL PLANNING DASHBOARD</div>
+    <h1>민원처리 현황 시각화 개선</h1>
+    <p class="subtitle">수작업 취합과 상이한 집계 기준을 개선하고, 주요 민원 현황을 직관적으로 확인하기 위한 검토안</p>
+    <div class="badges">
+      <span class="badge"><span class="dot"></span>공공부문 내부 검토용</span>
+      <span class="badge"><span class="dot"></span>정량 성과지표: 추가 확인 필요</span>
+      <span class="badge"><span class="dot"></span>일정·예산·담당: 미정</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2><span class="num">1</span>추진 배경</h2>
+      <div class="factbox">
+        <div class="label">확인된 현황</div>
+        부서별 민원 처리 현황을 월말마다 수작업으로 취합하고 있음.
+      </div>
+      <div class="proposalbox">
+        <div class="label">제안 방향</div>
+        입력·집계 방식 표준화 및 주요 현황을 직관적으로 확인할 수 있는 시각화 기반 관리체계 검토.
+      </div>
+    </section>
+
+    <section class="card span2">
+      <h2><span class="num">2</span>현황 및 문제점</h2>
+      <div class="problem-list">
+        <div class="problem"><b>자료 취합</b><span>여러 파일의 수치를 복사·취합하여 보고자료 작성</span></div>
+        <div class="problem"><b>집계 기준</b><span>부서별 집계 기준 차이로 재확인 반복</span></div>
+        <div class="problem"><b>현황 파악</b><span>긴급 민원 및 장기 미처리 건의 일괄 파악 곤란</span></div>
+      </div>
+    </section>
+
+    <section class="card span3">
+      <h2><span class="num">3</span>추진 목표 <span class="tag proposal">제안사항</span></h2>
+      <div class="tasks">
+        <div class="task"><div class="icon">01</div><h3>관리체계 표준화</h3><p>부서별 입력 및 집계 기준의 일관성 확보</p></div>
+        <div class="task"><div class="icon">02</div><h3>KPI 자동 산출</h3><p>입력자료 기반 기본 KPI 자동 계산 기능 검토</p></div>
+        <div class="task"><div class="icon">03</div><h3>조건별 조회</h3><p>부서·상태·긴급도 기준으로 현황 조회</p></div>
+        <div class="task"><div class="icon">04</div><h3>추이 시각화</h3><p>월별 처리 현황 및 변화 추이 확인</p></div>
+      </div>
+    </section>
+
+    <section class="card span2">
+      <h2><span class="num">4</span>주요 추진과제</h2>
+      <div class="tasks">
+        <div class="task"><div class="icon">A</div><h3>공통 입력 양식</h3><p>부서별 동일 기준 적용이 가능한 입력 양식 구성</p></div>
+        <div class="task"><div class="icon">B</div><h3>기본 KPI 자동 계산</h3><p>입력자료 기반 기본 KPI 자동 산출 기능 구성</p></div>
+        <div class="task"><div class="icon">C</div><h3>조건별 필터</h3><p>부서·상태·긴급도 기준 현황 조회 기능 구성</p></div>
+        <div class="task"><div class="icon">D</div><h3>월별 추이 차트</h3><p>민원처리 현황의 월별 변화 추이 시각화</p></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">8</span>추가 확인사항</h2>
+      <div class="needs">
+        <div class="need">구축 일정</div>
+        <div class="need">예산</div>
+        <div class="need">담당 부서</div>
+        <div class="need">운영 책임자</div>
+        <div class="need">KPI 정의·산식</div>
+        <div class="need">입력·집계 기준</div>
+        <div class="need">시스템 구현 방식</div>
+        <div class="need">데이터 검증 절차</div>
+        <div class="need">접근권한·운영 기준</div>
+      </div>
+    </section>
+
+    <section class="card span3">
+      <h2><span class="num">5</span>실행 절차 <span class="tag proposal">제안 절차</span></h2>
+      <div class="flow">
+        <div class="step"><small>STEP 1</small><h3>현행 기준 정리</h3><p>부서별 입력항목 및 집계 기준 확인</p></div>
+        <div class="step"><small>STEP 2</small><h3>공통 기준 정의</h3><p>공통 입력 양식, KPI 및 집계 기준 마련</p></div>
+        <div class="step"><small>STEP 3</small><h3>화면·기능 설계</h3><p>필터, KPI, 월별 추이 차트 등 구성</p></div>
+        <div class="step"><small>STEP 4</small><h3>적용 방식 검토</h3><p>기존 시스템 변경 또는 별도 구축 가능 여부 검토</p></div>
+        <div class="step"><small>STEP 5</small><h3>운영 기준 마련</h3><p>자료 입력·검증·관리 및 운영 책임체계 정리</p></div>
+      </div>
+    </section>
+
+    <section class="card span2">
+      <h2><span class="num">6</span>기대효과 <span class="tag proposal">정성적 기대효과</span></h2>
+      <div class="effects">
+        <div class="effect">반복적인 수작업 취합 업무 감소 가능</div>
+        <div class="effect">부서별 집계 기준의 일관성 향상 가능</div>
+        <div class="effect">긴급·장기 미처리 건 식별 용이성 향상 가능</div>
+        <div class="effect">월별 처리 현황 및 변화 추이 파악 용이</div>
+        <div class="effect">보고자료 기초자료 확인 절차 간소화 가능</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#8a5a00;background:#fff8eb;border-radius:8px;padding:8px 10px;">
+        ※ 업무시간 절감률, 처리속도 개선율 등 정량 성과는 추가 확인 필요
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">7</span>위험요인 및 대응방안</h2>
+      <table class="risk-table">
+        <thead><tr><th>위험요인</th><th>대응 방향</th></tr></thead>
+        <tbody>
+          <tr><td>개인정보 노출</td><td>표시 항목·데이터 범위 사전 확인</td></tr>
+          <tr><td>기존 시스템 영향</td><td>변경 여부 및 연계 필요성 사전 검토</td></tr>
+          <tr><td>부서별 기준 차이</td><td>공통 집계 기준 정의 및 적용 범위 협의</td></tr>
+          <tr><td>데이터 정확성</td><td>추가 확인 필요</td></tr>
+          <tr><td>접근권한</td><td>추가 확인 필요</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card span3 decision">
+      <h2>의사결정이 필요한 사항</h2>
+      <div class="decision-grid">
+        <div class="decision-item"><b>① 추진 범위</b><span>공통 입력·시각화 중심 추진 여부와 기존 시스템 연계·변경 포함 여부 결정</span></div>
+        <div class="decision-item"><b>② KPI 및 집계 기준</b><span>부서 공통 KPI 및 집계 기준 확정</span></div>
+        <div class="decision-item"><b>③ 구축 방식</b><span>별도 대시보드 구축 또는 기존 시스템 활용·변경 방식 검토</span></div>
+        <div class="decision-item"><b>④ 개인정보 처리 기준</b><span>대시보드 표시 데이터 범위 확정</span></div>
+        <div class="decision-item"><b>⑤ 추진체계</b><span>담당 부서 및 운영 책임자 지정</span></div>
+        <div class="decision-item"><b>⑥ 일정 및 예산</b><span>구축 일정 및 소요 예산 추가 검토</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>※ 본 화면은 기획 메모 기반 내부 검토용 초안이며, 확인되지 않은 수치·일정·예산·담당자는 임의로 작성하지 않음.</span>
+    <span>민원처리 현황 시각화 개선</span>
+  </footer>
+</div>
+</body>
+</html>
